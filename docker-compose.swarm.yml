@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - 80:80
+      - 81:81
+      - 82:82
+    depends_on:
+      - nifi1
+      - nifi2
+      - nifi3
+    volumes:
+      - ./nginx:/etc/nginx/conf.d/:Z
+    deploy:
+      mode: replicated
+      replicas: 1
+      #placement:
+      #  constraints: [node.hostname == centos-b]
+
+  zookeeper1:
+    hostname: zookeeper1
+    image: zookeeper:3.6.2
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zookeeper1:2888:3888;2181 server.2=zookeeper2:2888:3888;2181 server.3=zookeeper3:2888:3888;2181
+    deploy:
+      mode: replicated
+      replicas: 1
+      #placement:
+      #  constraints: [node.hostname == centos-manager]      
+  zookeeper2:
+    hostname: zookeeper2
+    image: zookeeper:3.6.2
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=zookeeper1:2888:3888;2181 server.2=zookeeper2:2888:3888;2181 server.3=zookeeper3:2888:3888;2181
+    deploy:
+      mode: replicated
+      replicas: 1
+      #placement:
+      #  constraints: [node.hostname == centos-a]
+  zookeeper3:
+    hostname: zookeeper3
+    image: zookeeper:3.6.2
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_SERVERS: server.1=zookeeper1:2888:3888;2181 server.2=zookeeper2:2888:3888;2181 server.3=zookeeper3:2888:3888;2181
+    deploy:
+      mode: replicated
+      replicas: 1
+      #placement:
+      #  constraints: [node.hostname == centos-b]
+
+  nifi1:
+    image: apache/nifi:latest
+    hostname: nifi1
+    ports:
+      - 8080:8080
+    user: root
+    environment:
+      JAVA_OPTS: -agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n
+      NIFI_CLUSTER_ADDRESS: nifi1
+      NIFI_WEB_HTTP_PORT: 8080
+    env_file:
+      - ./nifi.config.global.env
+    volumes:
+      - /opt/nifi/conf:/opt/nifi/nifi-current/conf:Z
+      - /opt/nifi/flow:/opt/nifi/nifi-current/flow:Z
+      - /opt/nifi/content_repository:/opt/nifi/nifi-current/content_repository:Z
+      - /opt/nifi/database_repository:/opt/nifi/nifi-current/database_repository:Z
+      - /opt/nifi/flowfile_repository:/opt/nifi/nifi-current/flowfile_repository:Z
+      - /opt/nifi/provenance_repository:/opt/nifi/nifi-current/provenance_repository:Z
+      - /opt/nifi/work:/opt/nifi/nifi-current/work:Z
+      - /opt/nifi/logs:/opt/nifi/nifi-current/logs:Z
+      - /tmp/data:/tmp/data:Z
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
+    deploy:
+      placement:
+        constraints: [node.labels.name==node1]
+  nifi2:
+    image: apache/nifi:latest
+    hostname: nifi2
+    ports:
+      - 8081:8081
+    user: root
+    environment:
+      AVA_OPTS: -agentlib:jdwp=transport=dt_socket,address=7000,server=y,suspend=n
+      NIFI_CLUSTER_ADDRESS: nifi2
+      NIFI_WEB_HTTP_PORT: 8081
+    env_file:
+      - ./nifi.config.global.env
+    volumes:
+      - /opt/nifi/conf:/opt/nifi/nifi-current/conf:Z
+      - /opt/nifi/flow:/opt/nifi/nifi-current/flow:Z
+      - /opt/nifi/content_repository:/opt/nifi/nifi-current/content_repository:Z
+      - /opt/nifi/database_repository:/opt/nifi/nifi-current/database_repository:Z
+      - /opt/nifi/flowfile_repository:/opt/nifi/nifi-current/flowfile_repository:Z
+      - /opt/nifi/provenance_repository:/opt/nifi/nifi-current/provenance_repository:Z
+      - /opt/nifi/work:/opt/nifi/nifi-current/work:Z
+      - /opt/nifi/logs:/opt/nifi/nifi-current/logs:Z
+      - /tmp/data:/tmp/data:Z
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
+    deploy:
+      placement:
+        constraints: [node.labels.name==node2]
+  nifi3:
+    image: apache/nifi:latest
+    hostname: nifi3
+    ports:
+      - 8082:8082
+    user: root
+    environment:
+      JAVA_OPTS: -agentlib:jdwp=transport=dt_socket,address=7000,server=y,suspend=n
+      NIFI_CLUSTER_ADDRESS: nifi3
+      NIFI_WEB_HTTP_PORT: 8082
+    env_file:
+      - ./nifi.config.global.env
+    volumes:
+      - /opt/nifi/conf:/opt/nifi/nifi-current/conf:Z
+      - /opt/nifi/flow:/opt/nifi/nifi-current/flow:Z
+      - /opt/nifi/content_repository:/opt/nifi/nifi-current/content_repository:Z
+      - /opt/nifi/database_repository:/opt/nifi/nifi-current/database_repository:Z
+      - /opt/nifi/flowfile_repository:/opt/nifi/nifi-current/flowfile_repository:Z
+      - /opt/nifi/provenance_repository:/opt/nifi/nifi-current/provenance_repository:Z
+      - /opt/nifi/work:/opt/nifi/nifi-current/work:Z
+      - /opt/nifi/logs:/opt/nifi/nifi-current/logs:Z
+      - /tmp/data:/tmp/data:Z
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
+
+    deploy:
+      placement:
+        constraints: [node.labels.name==node3]
+
